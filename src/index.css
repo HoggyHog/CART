@@ -18,7 +18,7 @@ code {
 .cart-item{
   height:20vh;
   width:40vw;
-  border:solid black 1px;
+  
   margin:2vh;
   display: flex;
 }
