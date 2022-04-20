@@ -4,7 +4,7 @@ import Navbar from "./Navbar";
 
 //importing in all the required functions only ->thats how firebase V9 works
 import {initializeApp} from 'firebase/app'
-import {getFirestore,collection,getDocs} from 'firebase/firestore'
+import {getFirestore,collection,getDocs,onSnapshot} from 'firebase/firestore'
 
 //this info which is unique to our firebase project
 const firebaseConfig = {
@@ -25,7 +25,8 @@ class App extends React.Component{
     this.state={
       products:[
         //we removed everything coz now we linked firebase to the app na
-      ]
+      ],
+      waiting:true
     }
   }
   IncreaseQuantity=(item)=>{
@@ -75,7 +76,7 @@ class App extends React.Component{
   }
 
   //nicely use this boi to take in data from firebase
-  componentDidMount(){
+  /* componentDidMount(){
     const app=initializeApp(firebaseConfig)   //starting the firebase stuff
     const db=getFirestore(app)                //accessing the firestore database
     const colref=collection(db,'products')    //touching the collection we need
@@ -85,15 +86,35 @@ class App extends React.Component{
         data['id']=item.id
         return data})
       this.setState({
-        products
+        products,
+        waiting:false
       })
     })
     
+  } */
+
+  //that above code runs perfect, but when we change sm in the db, it doesnt update here automatically, and we need
+  //to refresh every time ->so now were gonna set a listener ->onSnapshot, so we go like
+
+  componentDidMount(){
+    const app=initializeApp(firebaseConfig)
+    const db=getFirestore(app)
+    const colref=collection(db,'products')
+    onSnapshot(colref, (snapshot)=>{             //the only diff comes in this line, where we use onSnapshot instead of getDocs.
+      const products=snapshot.docs.map((item)=>{ //this takes 2 paramters ->colref and any function which will run anytime theres a change in db
+        const data=item.data()                   //and the function gets a parameter by default ->thats our snapshot from our previous method ->so after this point, its all the same
+        data['id']=item.id                       // and since it isnt like some promise, the code is also shorter
+        return data})
+      this.setState({
+        products,
+        waiting:false
+      })
+    })
   }
 
 
   render(){
-    const {products}=this.state
+    const {products,waiting}=this.state
    
     return(
       <div>
@@ -101,6 +122,7 @@ class App extends React.Component{
           CountItems={this.CountItems} 
 
         />
+        {waiting && (<h1>LOADING ....</h1>)}
         <Cart 
           products={products} 
           IncreaseQuantity={this.IncreaseQuantity}
