@@ -80,9 +80,10 @@ class App extends React.Component{
     const db=getFirestore(app)                //accessing the firestore database
     const colref=collection(db,'products')    //touching the collection we need
     getDocs(colref).then((snapshot)=>{        // touching the docs we need one at a time, and then 
-      const products=snapshot.docs.map((product)=>{  //putting them inside an array, to set that as 
-      return (product.data())                        //our state ->yessir
-      })
+      const products=snapshot.docs.map((item)=>{ //taking the data from them into an array, to set to 
+        const data=item.data()                   //state, and also dont forget that id thingy
+        data['id']=item.id
+        return data})
       this.setState({
         products
       })
