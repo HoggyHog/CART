@@ -4,7 +4,16 @@ import Navbar from "./Navbar";
 
 //importing in all the required functions only ->thats how firebase V9 works
 import {initializeApp} from 'firebase/app'
-import {getFirestore,collection,getDocs,onSnapshot} from 'firebase/firestore'
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  onSnapshot,
+  setDocs, 
+  addDoc, 
+  updateDoc,
+  doc,
+  deleteDoc} from 'firebase/firestore'
 
 //this info which is unique to our firebase project
 const firebaseConfig = {
@@ -18,7 +27,6 @@ const firebaseConfig = {
 
 
 
-
 class App extends React.Component{
   constructor(){
     super();
@@ -28,54 +36,14 @@ class App extends React.Component{
       ],
       waiting:true
     }
-  }
-  IncreaseQuantity=(item)=>{
-    const {products}=this.state
-    const index=products.indexOf(item)
-    products[index].qty+=1
-    this.setState({
-      products
-    })
+    //now to make some firebase stuff, so that i can access directly
+    this.app=initializeApp(firebaseConfig)
+    this.db=getFirestore(this.app)
+    this.colref=collection(this.db,'products')
+
   }
 
-  DecreaseQuantity=(item)=>{
-    const {products}=this.state
-    const index=products.indexOf(item)
-    if(products[index].qty!=0){
-      products[index].qty-=1
-      this.setState({
-        products
-      })
-    }
-  }
-
-  DeleteItem=(id)=>{
-    const {products}=this.state
-    const newprod=products.filter((item)=>item.id!=id)
-    this.setState({
-      products:newprod
-    })
-  }
-
-  CountItems=()=>{
-    const {products}=this.state
-    let s=0;
-    products.forEach((item)=>{
-      s+=item.qty
-    })
-    return s;
-  }
-
-  FindTotal=()=>{
-    const{products}=this.state
-    let s=0
-    products.forEach((item)=>{
-      s+=item.qty*item.price
-    })
-    return s
-  }
-
-  //nicely use this boi to take in data from firebase
+   //nicely use this boi to take in data from firebase
   /* componentDidMount(){
     const app=initializeApp(firebaseConfig)   //starting the firebase stuff
     const db=getFirestore(app)                //accessing the firestore database
@@ -97,10 +65,9 @@ class App extends React.Component{
   //to refresh every time ->so now were gonna set a listener ->onSnapshot, so we go like
 
   componentDidMount(){
-    const app=initializeApp(firebaseConfig)
-    const db=getFirestore(app)
-    const colref=collection(db,'products')
-    onSnapshot(colref, (snapshot)=>{             //the only diff comes in this line, where we use onSnapshot instead of getDocs.
+    
+    
+    onSnapshot(this.colref, (snapshot)=>{             //the only diff comes in this line, where we use onSnapshot instead of getDocs.
       const products=snapshot.docs.map((item)=>{ //this takes 2 paramters ->colref and any function which will run anytime theres a change in db
         const data=item.data()                   //and the function gets a parameter by default ->thats our snapshot from our previous method ->so after this point, its all the same
         data['id']=item.id                       // and since it isnt like some promise, the code is also shorter
@@ -113,6 +80,64 @@ class App extends React.Component{
   }
 
 
+  IncreaseQuantity=(item)=>{
+    
+
+    
+    const docref=doc(this.colref,item.id)
+    updateDoc(docref,{
+      qty:item.qty+1
+    })
+
+  }
+
+  DecreaseQuantity=(item)=>{
+    const docref=doc(this.colref,item.id)
+    if(item.qty!=0){
+      updateDoc(docref,{
+        qty:item.qty-1
+      })
+    }
+    
+  }
+
+  DeleteItem=(id)=>{
+    const docref=doc(this.colref,id)
+    deleteDoc(docref)
+    
+  }
+
+  CountItems=()=>{
+    const {products}=this.state
+    let s=0;
+    products.forEach((item)=>{
+      s+=item.qty
+    })
+    return s;
+  }
+
+  FindTotal=()=>{
+    const{products}=this.state
+    let s=0
+    products.forEach((item)=>{
+      s+=item.qty*item.price
+    })
+    return s
+  }
+
+ 
+
+  addProduct=()=>{
+   
+    addDoc(this.colref,{
+      title:'Washing machine',
+      price:9999,
+      qty:1,
+      img:"https://images.unsplash.com/photo-1626806787461-102c1bfaaea1?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8d2FzaGluZyUyMG1hY2hpbmV8ZW58MHx8MHx8&auto=format&fit=crop&w=500&q=60"
+    })
+
+  }
+
   render(){
     const {products,waiting}=this.state
    
@@ -123,6 +148,7 @@ class App extends React.Component{
 
         />
         {waiting && (<h1>LOADING ....</h1>)}
+        <button onClick={this.addProduct}>ADD A PRODUCT</button>
         <Cart 
           products={products} 
           IncreaseQuantity={this.IncreaseQuantity}
